@@ -19,10 +19,10 @@ class PromptInput:
     seed: int
 
     # Denoising strength
-    denoising: float = 0.75
+    denoising: float = 0.6
 
     # Classifier-free guidance strength
-    guidance: float = 7.0
+    guidance: float = 3.0
 
 
 @dataclass(frozen=True)
@@ -44,7 +44,7 @@ class InferenceInput:
     alpha: float
 
     # Number of inner loops of the diffusion model
-    num_inference_steps: int = 50
+    num_inference_steps: int = 100
 
     # Which seed image to use
     seed_image_id: str = "og_beat"

@@ -22,7 +22,7 @@ def wav_bytes_from_spectrogram_image(image: Image.Image) -> T.Tuple[io.BytesIO, 
     Sxx = spectrogram_from_image(image, max_volume=max_volume, power_for_image=power_for_image)
 
     sample_rate = 44100  # [Hz]
-    clip_duration_ms = 5000  # [ms]
+    clip_duration_ms = 5000 * 2  # [ms]
 
     bins_per_image = 512
     n_mels = 512
@@ -85,6 +85,34 @@ def spectrogram_from_image(
 
     return data
 
+def image_from_spectrogram(
+    spectrogram: np.ndarray,
+    max_volume: float = 50,
+    power_for_image: float = 0.25,
+    image_height: int = 512,
+    image_width: int = 512 * 2,
+    image_format: str = "RGB",
+    ) -> Image.Image:
+    # Reverse the power curve
+    data = 4 * np.log(1 + spectrogram)
+    # data = np.power(spectrogram, power_for_image)
+
+    # Scale to 255
+    data = np.clip(data * 255 / max_volume, 0, 255)
+
+    # Invert
+    data = 255 - data
+
+    # Flip Y
+    data = data[::-1, :]
+
+    # Resize to the desired image dimensions
+    data = np.uint8(np.round(data))
+    image = Image.fromarray(data, 'L').convert(image_format)
+    image = image.resize((image_width, image_height), resample=Image.BICUBIC)
+
+    return image
+
 
 def spectrogram_from_waveform(
     waveform: np.ndarray,
@@ -98,6 +126,15 @@ def spectrogram_from_waveform(
     """
     Compute a spectrogram from a waveform.
     """
+
+    print("waveform.shape", waveform.shape)
+    print("waveform.dtype", waveform.dtype)
+    print("sample_rate", sample_rate)
+    print("n_fft", n_fft)
+    print("hop_length", hop_length)
+    print("win_length", win_length)
+    print("mel_scale", mel_scale)
+    print("n_mels", n_mels)
 
     spectrogram_func = torchaudio.transforms.Spectrogram(
         n_fft=n_fft,
@@ -146,6 +183,18 @@ def waveform_from_spectrogram(
     This is an approximate inverse of spectrogram_from_waveform, using the Griffin-Lim algorithm
     to approximate the phase.
     """
+    print("Sxx.shape", Sxx.shape)
+    print("n_fft", n_fft)
+    print("hop_length", hop_length)
+    print("win_length", win_length)
+    print("num_samples", num_samples)
+    print("sample_rate", sample_rate)
+    print("mel_scale", mel_scale)
+    print("n_mels", n_mels)
+    print("max_mel_iters", max_mel_iters)
+    print("num_griffin_lim_iters", num_griffin_lim_iters)
+    print("device", device)
+
     Sxx_torch = torch.from_numpy(Sxx).to(device)
 
     # TODO(hayk): Make this a class that caches the two things
